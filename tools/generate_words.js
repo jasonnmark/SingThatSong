@@ -63,6 +63,13 @@ inhabit reside meander loiter linger dwell perch roost
 indifferent apathetic detached aloof bewildered baffled perplexed confounded
 swan sparrow nightingale robin raven hawk crow finch wren lark heron crane
 county meadow glade thicket bramble
+dreamer dancer singer fighter
+shiver tremble shimmer flicker sigh hum whistle melt
+lovesick homesick heartland nighttime rainfall wildfire daydream
+ago amen anthem encore serenade vinyl lullaby
+bayou bend bare arrive boo border buddy confess crew dusk engine fling fog fox
+gloves gypsy harlem memphis nashville backseat scarf pulse restless gas ash
+hype flex squad
 `.trim().split(/\s+/));
 
 // ---------------------------------------------------------------------------
@@ -178,9 +185,22 @@ drive: `drive car road highway wheels speed race cruise miles gas window radio
 fast escape engine`,
 
 compounds: `heartbreak heartache sunshine moonlight sunlight starlight midnight
-sunrise sunset daylight firefly wildfire rainfall waterfall hometown downtown
+sunrise sunset daylight firefly waterfall hometown downtown
 heartbeat goodbye someday somebody nobody everybody forever tonight sunflower
-lovesick homesick daydream nighttime lifetime heartland`,
+lifetime`,
+
+// very common, strongly song-associated words to make sure are included
+core_extra: `world everything nothing someone alright crazy beautiful tonight
+sunshine summertime dancing falling waiting calling holding missing
+superman cinderella angel baby honey darling lover sweet desire
+dance party radio music song melody rhythm sing
+fire flame burning rain storm sunshine river ocean mountain highway
+gold money diamond crown
+heart soul body eyes smile kiss tears
+dream love hope faith
+crazy wild young free forever tonight midnight
+home heaven angel devil king queen
+red blue green black white gold silver purple pink orange`,
 };
 
 // ---------------------------------------------------------------------------
