@@ -55,6 +55,11 @@
   .topbar .label{font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.7;font-weight:700;}
   .iconbtn{background:var(--panel);border:none;color:var(--ink);border-radius:10px;
     padding:8px 10px;font-size:18px;line-height:1;}
+  /* small, low-key "give up" — easy to ignore, hard to hit by accident */
+  .giveup{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;
+    border-radius:8px;padding:3px 7px;font-size:10px;font-weight:700;letter-spacing:.5px;
+    text-transform:uppercase;opacity:.45;}
+  .giveup:active{opacity:.9;}
 
   /* Stage */
   .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -139,7 +144,10 @@
 
   <div class="topbar">
     <div class="label">Sing That Song</div>
-    <button class="iconbtn" id="settingsBtn" aria-label="Settings">⚙</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="giveup" id="giveUpBtn" aria-label="Give up this word">give up</button>
+      <button class="iconbtn" id="settingsBtn" aria-label="Settings">⚙</button>
+    </div>
   </div>
 
   <!-- Stage -->
@@ -390,13 +398,15 @@
     state="ready"; remaining=settings.turn*1000; body.classList.remove("timeup"); render();
   }
 
-  // success: current team sang it -> count a pass, hand to the other team, same word
+  // success: current team sang it -> count a pass, hand to the other team, same word.
+  // The next team already knows the word, so start their timer immediately.
   function gotIt(){
     if(state!=="running" && state!=="paused") return;
     if(raf) cancelAnimationFrame(raf); raf=null;
     passes++;
     game.currentTeam = 1 - game.currentTeam;
-    state="ready"; remaining=settings.turn*1000;
+    remaining=settings.turn*1000;
+    state="running"; startLoop();
     saveGame(); render();
   }
 
@@ -539,6 +549,16 @@
   $("give4Btn").onclick=grace;
   $("awardBtn").onclick=awardPoint;
   $("resetBtn2").onclick=resetTimer;
+
+  // give up: current team concedes this word, the other team scores
+  function giveUp(){
+    const other = settings.names[1 - game.currentTeam];
+    if(state==="timeup"){ awardPoint(); return; }
+    if(confirm("Give up on “"+currentWord+"”?\n"+other+" gets the point.")){
+      awardPoint();
+    }
+  }
+  $("giveUpBtn").onclick=giveUp;
 
   $("settingsBtn").onclick=openSettings;
   $("closeSettings").onclick=closeSettings;
