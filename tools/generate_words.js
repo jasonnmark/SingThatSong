@@ -61,6 +61,8 @@ walrus possum skunk beaver otter minnow newt
 caboose zeppelin blimp gramophone typewriter parchment ledger quill
 inhabit reside meander loiter linger dwell perch roost
 indifferent apathetic detached aloof bewildered baffled perplexed confounded
+swan sparrow nightingale robin raven hawk crow finch wren lark heron crane
+county meadow glade thicket bramble
 `.trim().split(/\s+/));
 
 // ---------------------------------------------------------------------------
@@ -102,8 +104,8 @@ mountain hill valley cliff canyon cave rock stone
 forest woods tree leaves flower roses garden field grass meadow
 desert dirt mud earth ground fire flame flames smoke ash dust`,
 
-animals: `bird wings dove eagle hawk crow raven wolf lion tiger bear fox
-dog cat horse snake fish shark butterfly bee swan robin sparrow nightingale`,
+animals: `bird wings dove eagle wolf lion tiger bear fox
+dog cat horse snake fish shark butterfly bee`,
 
 time: `time day night morning noon midnight evening sunday monday friday saturday
 today tomorrow yesterday week month year summer winter spring autumn season

@@ -146,6 +146,7 @@
   <div class="topbar">
     <div class="label">Sing That Song</div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <button class="giveup" id="newWordTop" aria-label="New word">new word</button>
       <button class="giveup" id="giveUpBtn" aria-label="Give up this word">give up</button>
       <button class="iconbtn" id="settingsBtn" aria-label="Settings">⚙</button>
     </div>
@@ -426,7 +427,21 @@
     if(!settings.vibrate) return;
     try{ if(navigator.vibrate) navigator.vibrate([400,120,400,120,400]); }catch(e){}
   }
+  // fresh word, restart the round, NO points — keeps team + scores
+  function newWord(){
+    if(raf) cancelAnimationFrame(raf); raf=null;
+    currentWord = nextWord();
+    passes = 0;
+    state = "ready";
+    remaining = settings.turn*1000;
+    body.classList.remove("timeup");
+    saveGame(); render();
+  }
+
   function awardPoint(){
+    // guard against double-scoring: only one point per word, and only while a
+    // turn is actually live (running/paused/timeup) — never from the ready state
+    if(state==="ready") return;
     const loser = game.currentTeam;
     const winner = 1 - loser;
     game.scores[winner]++;
@@ -452,12 +467,6 @@
     });
     saveLogs();
     LS.set("sts_runseq", (LS.get("sts_runseq",0)+1));
-  }
-
-  function shuffleWord(){
-    // only allowed before any pass on the current word
-    if(passes>0) return;
-    currentWord = nextWord(); render();
   }
 
   // ---------- buzzer (WebAudio, no asset) ----------
@@ -549,7 +558,8 @@
   // EVENTS
   // ====================================================================
   $("startBtn").onclick=startTimer;
-  $("shuffleBtn").onclick=shuffleWord;
+  $("shuffleBtn").onclick=newWord;
+  $("newWordTop").onclick=newWord;
   $("gotBtn").onclick=gotIt;
   $("pauseBtn").onclick=togglePause;
   $("plus5Btn").onclick=bump;
