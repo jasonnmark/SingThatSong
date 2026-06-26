@@ -57,7 +57,7 @@ love: `love lover beloved romance crush flame passion desire kiss hug embrace cu
 sweetheart darling honey sugar valentine affection devotion adore cherish yearn long
 heartbreak heartache breakup ex flirt tease seduce tempt romance fling affair
 soulmate partner companion match boyfriend girlfriend bride groom wedding marriage husband wife
-ring vow forever faithful loyal cheat unfaithful betray jealous jealousy
+ring vow forever faithful loyal cheat betray jealous jealousy
 heart soul spirit feeling emotion butterfly spark chemistry attraction`,
 
 people: `baby girl boy man woman lady gentleman child kid son daughter brother sister mother father

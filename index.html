@@ -42,8 +42,9 @@
   .score{display:flex;gap:8px;padding:10px 10px 4px;}
   .score .card{
     flex:1;background:var(--panel);border-radius:14px;padding:8px 10px;text-align:center;
-    border:2px solid transparent;transition:border .2s,opacity .2s;opacity:.62;
+    border:2px solid transparent;transition:border .2s,opacity .2s;opacity:.62;cursor:pointer;
   }
+  .score .card:active{transform:scale(.98);}
   .score .card.active{border-color:rgba(255,255,255,.9);opacity:1;box-shadow:0 4px 18px rgba(0,0,0,.25);}
   .score .name{font-size:14px;font-weight:600;letter-spacing:.3px;opacity:.9;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -242,7 +243,7 @@
       <label id="scoreLbl1">Team 2 score</label>
       <div class="stepper"><button data-score="1,-1">−</button><span class="val" id="vScore1">0</span><button data-score="1,1">+</button></div>
     </div>
-    <button class="ghost" id="swapTeamBtn">⇄ Switch which team is singing</button>
+    <p class="muted">Tip: tap a team at the top to switch who's singing.</p>
 
     <h3>Game</h3>
     <button class="ghost" id="newGameBtn">🆕 New game (reset scores, new log run)</button>
@@ -560,6 +561,11 @@
   }
   $("giveUpBtn").onclick=giveUp;
 
+  // tap a team card to switch who is singing — at any time, without disturbing the timer
+  function setTeam(i){ game.currentTeam=i; saveGame(); render(); }
+  el.card[0].onclick=()=>setTeam(0);
+  el.card[1].onclick=()=>setTeam(1);
+
   $("settingsBtn").onclick=openSettings;
   $("closeSettings").onclick=closeSettings;
   M.onclick=(e)=>{ if(e.target===M) closeSettings(); };
@@ -586,7 +592,6 @@
   $("soundToggle").onclick=()=>{ settings.sound=!settings.sound; saveSettings(); syncSettingsUI(); };
   $("tname0").oninput=(e)=>{ settings.names[0]=e.target.value||"Team 1"; saveSettings(); syncSettingsUI(); render(); };
   $("tname1").oninput=(e)=>{ settings.names[1]=e.target.value||"Team 2"; saveSettings(); syncSettingsUI(); render(); };
-  $("swapTeamBtn").onclick=()=>{ game.currentTeam=1-game.currentTeam; saveGame(); syncSettingsUI(); render(); };
   $("newGameBtn").onclick=()=>{ if(confirm("Start a new game? Scores reset and a new log run begins.")){ newGame(); closeSettings(); } };
 
   $("exportJsonBtn").onclick=exportJson;
