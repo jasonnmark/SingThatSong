@@ -191,7 +191,7 @@
     <!-- TIME UP -->
     <div id="stateTimeup" class="hide">
       <div class="row">
-        <button class="btn warn big" id="give4Btn">+4s grace</button>
+        <button class="btn warn big" id="give4Btn">▶ Give more time</button>
       </div>
       <div class="row">
         <button class="btn bad" id="awardBtn">Point → other team</button>
@@ -216,12 +216,12 @@
       <div class="stepper"><button data-step="bump,-1">−</button><span class="val" id="vBump">5</span><button data-step="bump,1">+</button></div>
     </div>
     <div class="field">
-      <label>Grace amount</label>
-      <div class="stepper"><button data-step="grace,-1">−</button><span class="val" id="vGrace">4</span><button data-step="grace,1">+</button></div>
-    </div>
-    <div class="field">
       <label>Buzzer sound</label>
       <div class="stepper"><button id="soundToggle" class="ghost" style="width:auto;margin:0;padding:8px 16px">On</button></div>
+    </div>
+    <div class="field">
+      <label>Vibrate on time-up</label>
+      <div class="stepper"><button id="vibrateToggle" class="ghost" style="width:auto;margin:0;padding:8px 16px">On</button></div>
     </div>
 
     <h3>Teams</h3>
@@ -271,7 +271,7 @@
   };
 
   const DEFAULT_SETTINGS = {
-    turn:30, bump:5, grace:4, sound:true,
+    turn:30, bump:5, sound:true, vibrate:true,
     names:["Team 1","Team 2"]
   };
   let settings = Object.assign({}, DEFAULT_SETTINGS, LS.get("sts_settings",{}));
@@ -390,8 +390,8 @@
     remaining = Math.min(settings.turn*1000, remaining + settings.bump*1000);
     render();
   }
-  function grace(){ // give grace seconds and resume from timeup
-    remaining = settings.grace*1000;
+  function grace(){ // give a little more time and resume from timeup (reuses the +5s amount)
+    remaining = settings.bump*1000;
     state="running"; body.classList.remove("timeup"); startLoop(); render();
   }
   function resetTimer(){ // same team, same word, back to ready with full time
@@ -418,6 +418,13 @@
     body.classList.add("timeup");
     setTimeout(()=>body.classList.remove("timeup"), 1600);
     buzzer();
+    vibrate();
+  }
+
+  // ---------- vibrate (mobile) ----------
+  function vibrate(){
+    if(!settings.vibrate) return;
+    try{ if(navigator.vibrate) navigator.vibrate([400,120,400,120,400]); }catch(e){}
   }
   function awardPoint(){
     const loser = game.currentTeam;
@@ -489,8 +496,8 @@
   function syncSettingsUI(){
     $("vTurn").textContent=settings.turn;
     $("vBump").textContent=settings.bump;
-    $("vGrace").textContent=settings.grace;
     $("soundToggle").textContent=settings.sound?"On":"Off";
+    $("vibrateToggle").textContent=settings.vibrate?"On":"Off";
     $("tname0").value=settings.names[0];
     $("tname1").value=settings.names[1];
     $("vScore0").textContent=game.scores[0];
@@ -576,7 +583,6 @@
       const [k,d]=b.dataset.step.split(","); const delta=parseInt(d,10);
       if(k==="turn") settings.turn=Math.max(5, Math.min(180, settings.turn+delta));
       if(k==="bump") settings.bump=Math.max(1, Math.min(30, settings.bump+delta));
-      if(k==="grace") settings.grace=Math.max(1, Math.min(30, settings.grace+delta));
       if(k==="turn" && state==="ready"){ remaining=settings.turn*1000; }
       saveSettings(); syncSettingsUI(); render();
     };
@@ -590,6 +596,7 @@
     };
   });
   $("soundToggle").onclick=()=>{ settings.sound=!settings.sound; saveSettings(); syncSettingsUI(); };
+  $("vibrateToggle").onclick=()=>{ settings.vibrate=!settings.vibrate; saveSettings(); syncSettingsUI(); if(settings.vibrate) vibrate(); };
   $("tname0").oninput=(e)=>{ settings.names[0]=e.target.value||"Team 1"; saveSettings(); syncSettingsUI(); render(); };
   $("tname1").oninput=(e)=>{ settings.names[1]=e.target.value||"Team 2"; saveSettings(); syncSettingsUI(); render(); };
   $("newGameBtn").onclick=()=>{ if(confirm("Start a new game? Scores reset and a new log run begins.")){ newGame(); closeSettings(); } };
