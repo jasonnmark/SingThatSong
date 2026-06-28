@@ -93,6 +93,8 @@
   }
   button.btn:active{transform:scale(.97);}
   button.btn.big{padding:26px 10px;font-size:24px;}
+  /* medium: between the big action buttons and the tiny top buttons */
+  button.btn.mid{padding:11px 10px;font-size:15px;background:rgba(255,255,255,.10);font-weight:700;}
   button.btn.go{background:#fff;color:#111;}
   button.btn.ok{background:var(--ok);}
   button.btn.warn{background:var(--warn);color:#3a2a00;}
@@ -146,8 +148,8 @@
   <div class="topbar">
     <div class="label">Sing That Song</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button class="giveup" id="newWordTop" aria-label="New word">new word</button>
-      <button class="giveup" id="giveUpBtn" aria-label="Give up this word">give up</button>
+      <button class="giveup" id="newWordTop" aria-label="Skip word, no points">skip word</button>
+      <button class="giveup" id="giveUpBtn" aria-label="Concede the point to the other team">concede point</button>
       <button class="iconbtn" id="settingsBtn" aria-label="Settings">⚙</button>
     </div>
   </div>
@@ -167,8 +169,15 @@
 
   <!-- Controls -->
   <div class="controls" id="controls">
+    <!-- IDLE (first run / new game) -->
+    <div id="stateIdle" class="hide">
+      <div class="row">
+        <button class="btn go big" id="startGameBtn">▶ Start</button>
+      </div>
+    </div>
+
     <!-- READY -->
-    <div id="stateReady">
+    <div id="stateReady" class="hide">
       <div class="row">
         <button class="btn go big" id="startBtn">▶ Start Timer</button>
       </div>
@@ -192,12 +201,17 @@
     <!-- TIME UP -->
     <div id="stateTimeup" class="hide">
       <div class="row">
-        <button class="btn warn big" id="give4Btn">▶ Give more time</button>
+        <button class="btn ok big" id="awardBtn">✓ Score it → next word</button>
       </div>
       <div class="row">
-        <button class="btn bad" id="awardBtn">Point → other team</button>
+        <button class="btn warn" id="give4Btn">▶ Give more time</button>
         <button class="btn" id="resetBtn2">↺ Reset</button>
       </div>
+    </div>
+
+    <!-- UNDO (shown whenever there's an action to undo) -->
+    <div id="undoRow" class="row hide" style="margin-top:10px">
+      <button class="btn mid" id="undoBtn">↶ Undo last action</button>
     </div>
   </div>
 </div>
@@ -300,12 +314,13 @@
   function nextWord(){ if(!deck.length) reshuffle(); return deck.pop(); }
 
   // ---------- round state ----------
-  let state = "ready";          // ready | running | paused | timeup
-  let currentWord = nextWord();
+  let state = "idle";           // idle | ready | running | paused | timeup
+  let currentWord = null;       // hidden until the game is started
   let passes = 0;               // back-and-forth count for current word
   let remaining = settings.turn * 1000;
   let lastTick = 0;
   let raf = null;
+  let undoStack = [];           // snapshots for the Undo button
 
   // ---------- elements ----------
   const $ = (id)=>document.getElementById(id);
@@ -314,8 +329,8 @@
     word:$("word"), timer:$("timer"), bar:$("bar"), passes:$("passes"),
     turnLabel:$("turnLabel"), statusMsg:$("statusMsg"),
     card:[ $("card0"), $("card1") ], name:[ $("name0"), $("name1") ], pts:[ $("pts0"), $("pts1") ],
-    ready:$("stateReady"), play:$("statePlay"), timeup:$("stateTimeup"),
-    pauseBtn:$("pauseBtn"),
+    idle:$("stateIdle"), ready:$("stateReady"), play:$("statePlay"), timeup:$("stateTimeup"),
+    undoRow:$("undoRow"), pauseBtn:$("pauseBtn"),
   };
 
   // ---------- rendering ----------
@@ -336,10 +351,14 @@
     body.classList.toggle("team1", game.currentTeam===0);
     body.classList.toggle("team2", game.currentTeam===1);
 
-    el.word.textContent = currentWord;
-    el.turnLabel.textContent = settings.names[game.currentTeam] + " — sing a song with…";
-    el.passes.textContent = passes>0 ? ("Back-and-forth: " ) : "";
-    if(passes>0){ el.passes.innerHTML = "Back-and-forth: <b>"+passes+"</b>"; }
+    if(state==="idle"){
+      el.word.textContent = "tap start";
+      el.turnLabel.textContent = settings.names[game.currentTeam] + " starts";
+    } else {
+      el.word.textContent = currentWord;
+      el.turnLabel.textContent = settings.names[game.currentTeam] + " — sing a song with…";
+    }
+    el.passes.innerHTML = (state!=="idle" && passes>0) ? ("Back-and-forth: <b>"+passes+"</b>") : "";
 
     // timer
     el.timer.textContent = fmt(remaining);
@@ -350,13 +369,16 @@
     el.timer.classList.toggle("crit", remaining<=5000 && state!=="ready" && state!=="timeup");
 
     // status + controls
+    el.idle.classList.toggle("hide", state!=="idle");
     el.ready.classList.toggle("hide", state!=="ready");
     el.play.classList.toggle("hide", !(state==="running"||state==="paused"));
     el.timeup.classList.toggle("hide", state!=="timeup");
+    el.undoRow.classList.toggle("hide", !(undoStack.length>0 && state!=="idle"));
     el.pauseBtn.textContent = state==="paused" ? "▶ Resume" : "⏸ Pause";
 
     el.statusMsg.className = "statusmsg";
-    if(state==="ready") el.statusMsg.textContent = "Read the word, then press Start";
+    if(state==="idle") el.statusMsg.textContent = "Press Start to reveal the first word";
+    else if(state==="ready") el.statusMsg.textContent = "Read the word, then press Start";
     else if(state==="paused") el.statusMsg.textContent = "Paused";
     else if(state==="timeup"){ el.statusMsg.textContent = "⏰ TIME'S UP!"; el.statusMsg.classList.add("bad"); }
     else el.statusMsg.textContent = "";
@@ -377,7 +399,36 @@
     raf = requestAnimationFrame(loop);
   }
 
+  // ---------- undo ----------
+  function snapshot(){
+    return {
+      currentWord, passes, remaining, state,
+      currentTeam: game.currentTeam, startingTeam: game.startingTeam,
+      scores: game.scores.slice(), logLen: logs.length
+    };
+  }
+  function pushUndo(){ undoStack.push(snapshot()); if(undoStack.length>20) undoStack.shift(); }
+  function undo(){
+    if(!undoStack.length) return;
+    if(raf) cancelAnimationFrame(raf); raf=null;
+    const s = undoStack.pop();
+    currentWord = s.currentWord; passes = s.passes; remaining = s.remaining;
+    game.currentTeam = s.currentTeam; game.startingTeam = s.startingTeam;
+    game.scores = s.scores.slice();
+    logs.length = s.logLen; saveLogs();           // drop any log entry the action added
+    body.classList.remove("timeup");
+    // restore where we were; if the timer had been running, leave it PAUSED so it
+    // resumes from exactly where it was instead of ticking immediately
+    state = (s.state==="running") ? "paused" : s.state;
+    saveGame(); render();
+  }
+
   // ---------- transitions ----------
+  function startGame(){ // reveal the first word (idle -> ready)
+    currentWord = nextWord(); passes = 0;
+    state = "ready"; remaining = settings.turn*1000;
+    undoStack = []; render();
+  }
   function startTimer(){
     if(state!=="ready") return;
     state="running"; startLoop(); render();
@@ -404,6 +455,7 @@
   // The next team already knows the word, so start their timer immediately.
   function gotIt(){
     if(state!=="running" && state!=="paused") return;
+    pushUndo();
     if(raf) cancelAnimationFrame(raf); raf=null;
     passes++;
     game.currentTeam = 1 - game.currentTeam;
@@ -431,6 +483,8 @@
   // The skipped word IS logged (with its back-and-forth count) so we can
   // learn which words get dropped.
   function newWord(){
+    if(state==="idle") return;
+    pushUndo();
     if(raf) cancelAnimationFrame(raf); raf=null;
     logResult(currentWord, passes, "skipped", null, null);
     currentWord = nextWord();
@@ -443,8 +497,9 @@
 
   function awardPoint(){
     // guard against double-scoring: only one point per word, and only while a
-    // turn is actually live (running/paused/timeup) — never from the ready state
-    if(state==="ready") return;
+    // turn is actually live (running/paused/timeup) — never from idle/ready
+    if(state==="ready" || state==="idle") return;
+    pushUndo();
     const loser = game.currentTeam;
     const winner = 1 - loser;
     game.scores[winner]++;
@@ -495,8 +550,10 @@
   // ---------- new game ----------
   function newGame(){
     game = { scores:[0,0], currentTeam: game.startingTeam||0, startingTeam: game.startingTeam||0, runId:newRunId() };
-    currentWord = nextWord(); passes=0; reshuffle();
-    resetTimer(); saveGame();
+    if(raf) cancelAnimationFrame(raf); raf=null;
+    currentWord = null; passes = 0; reshuffle(); undoStack = [];
+    state = "idle"; remaining = settings.turn*1000; body.classList.remove("timeup");
+    saveGame(); render();
   }
 
   // ====================================================================
@@ -562,6 +619,7 @@
   // ====================================================================
   // EVENTS
   // ====================================================================
+  $("startGameBtn").onclick=startGame;
   $("startBtn").onclick=startTimer;
   $("shuffleBtn").onclick=newWord;
   $("newWordTop").onclick=newWord;
@@ -572,12 +630,14 @@
   $("give4Btn").onclick=grace;
   $("awardBtn").onclick=awardPoint;
   $("resetBtn2").onclick=resetTimer;
+  $("undoBtn").onclick=undo;
 
-  // give up: current team concedes this word, the other team scores
+  // concede point: current team gives up this word, the other team scores
   function giveUp(){
+    if(state==="idle") return;
     const other = settings.names[1 - game.currentTeam];
     if(state==="timeup"){ awardPoint(); return; }
-    if(confirm("Give up on “"+currentWord+"”?\n"+other+" gets the point.")){
+    if(confirm("Concede “"+currentWord+"”?\n"+other+" gets the point.")){
       awardPoint();
     }
   }

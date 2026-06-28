@@ -69,9 +69,31 @@ lovesick homesick heartland nighttime rainfall wildfire daydream
 ago amen anthem encore serenade vinyl lullaby
 bayou bend bare arrive boo border buddy confess crew dusk engine fling fog fox
 gloves gypsy harlem memphis nashville backseat scarf pulse restless gas ash
-hype flex squad
-sweetie faithful unfaithful true nobody somebody everybody
+hype flex squad mood
+sweetie faithful unfaithful nobody somebody everybody
+cruise alley canyon cave concert eternity fortune glitter jackpot lottery
+jewel jewelry necklace lace paycheck pocket scarlet sparkle vow lift mud
+neighbor bill
+true truth free freedom young youth dark darkness dead death alone lonely
+sin sinner pray prayer
 `.trim().split(/\s+/));
+
+// ---------------------------------------------------------------------------
+// SPECIAL: multi-form display entries, appended verbatim (bypass normalizer).
+// Use for same-root families where showing both forms gives players more to
+// work with than either word alone.
+// ---------------------------------------------------------------------------
+const SPECIAL = [
+  'nobody / no one',
+  'true / truth',
+  'free / freedom',
+  'young / youth',
+  'dark / darkness',
+  'dead / death',
+  'alone / lonely',
+  'sin / sinner',
+  'pray / prayer',
+];
 
 // ---------------------------------------------------------------------------
 // Curated seed — concrete, emotional, song-evocative words. Base forms; the
@@ -257,6 +279,7 @@ for (const w of collapsed) {
   seen.add(w);
   words.push(w);
 }
+for (const s of SPECIAL) { if (!seen.has(s)) { seen.add(s); words.push(s); } }
 words.sort();
 
 const out =
