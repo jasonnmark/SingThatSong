@@ -211,7 +211,7 @@
 
     <!-- UNDO (shown whenever there's an action to undo) -->
     <div id="undoRow" class="row hide" style="margin-top:10px">
-      <button class="btn mid" id="undoBtn">↶ Undo last action</button>
+      <button class="btn mid" id="undoBtn">↩ Oops, go back</button>
     </div>
   </div>
 </div>
@@ -417,9 +417,9 @@
     game.scores = s.scores.slice();
     logs.length = s.logLen; saveLogs();           // drop any log entry the action added
     body.classList.remove("timeup");
-    // restore where we were; if the timer had been running, leave it PAUSED so it
-    // resumes from exactly where it was instead of ticking immediately
-    state = (s.state==="running") ? "paused" : s.state;
+    // restore exactly where we were and keep the clock going if it was running
+    state = s.state;
+    if(state==="running") startLoop();
     saveGame(); render();
   }
 
