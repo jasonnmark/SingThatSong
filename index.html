@@ -427,9 +427,12 @@
     if(!settings.vibrate) return;
     try{ if(navigator.vibrate) navigator.vibrate([400,120,400,120,400]); }catch(e){}
   }
-  // fresh word, restart the round, NO points — keeps team + scores
+  // fresh word, restart the round, NO points — keeps team + scores.
+  // The skipped word IS logged (with its back-and-forth count) so we can
+  // learn which words get dropped.
   function newWord(){
     if(raf) cancelAnimationFrame(raf); raf=null;
+    logResult(currentWord, passes, "skipped", null, null);
     currentWord = nextWord();
     passes = 0;
     state = "ready";
@@ -445,7 +448,7 @@
     const loser = game.currentTeam;
     const winner = 1 - loser;
     game.scores[winner]++;
-    logResult(currentWord, passes, winner, loser);
+    logResult(currentWord, passes, "completed", winner, loser);
     // winner starts the next word
     game.startingTeam = winner;
     game.currentTeam = winner;
@@ -455,13 +458,14 @@
     saveGame();
   }
 
-  function logResult(word, passes, winner, loser){
+  function logResult(word, passes, outcome, winner, loser){
     logs.push({
       runId: game.runId,
       word: word,
       passes: passes,
-      winner: settings.names[winner],
-      loser: settings.names[loser],
+      outcome: outcome,                                   // "completed" | "skipped"
+      winner: winner==null ? "" : settings.names[winner],
+      loser:  loser==null  ? "" : settings.names[loser],
       startedBy: settings.names[game.startingTeam],
       ts: new Date().toISOString()
     });
@@ -518,16 +522,17 @@
 
   function renderLogStats(){
     if(!logs.length){ $("logSummary").textContent="No data yet. Finished words will appear here."; $("logStats").innerHTML=""; return; }
-    const dist={}; let keepable=0, tooShort=0, tooLong=0;
+    const dist={}; let keepable=0, tooShort=0, tooLong=0, skipped=0;
     logs.forEach(l=>{
       dist[l.passes]=(dist[l.passes]||0)+1;
+      if(l.outcome==="skipped") skipped++;
       if(l.passes<=1) tooShort++;
       else if(l.passes>=8) tooLong++;
       else keepable++;
     });
     $("logSummary").innerHTML =
       "<b>"+logs.length+"</b> words logged across "+
-      new Set(logs.map(l=>l.runId)).size+" run(s).<br>"+
+      new Set(logs.map(l=>l.runId)).size+" run(s) ("+skipped+" skipped).<br>"+
       "<span class='pill' style='background:#16341f;color:#9be7b4'>good 2–7: "+keepable+"</span> "+
       "<span class='pill' style='background:#3a2a00;color:#ffd98a'>drop ≤1: "+tooShort+"</span> "+
       "<span class='pill' style='background:#3a1414;color:#ff9a9a'>drop ≥8: "+tooLong+"</span>";
@@ -548,9 +553,9 @@
   }
   function exportJson(){ download("singthatsong-log.json", JSON.stringify(logs,null,2), "application/json"); }
   function exportCsv(){
-    const head="word,passes,winner,loser,startedBy,runId,timestamp\n";
+    const head="word,passes,outcome,winner,loser,startedBy,runId,timestamp\n";
     const esc=(s)=>'"'+String(s).replace(/"/g,'""')+'"';
-    const body=logs.map(l=>[l.word,l.passes,l.winner,l.loser,l.startedBy,l.runId,l.ts].map(esc).join(",")).join("\n");
+    const body=logs.map(l=>[l.word,l.passes,l.outcome||"",l.winner,l.loser,l.startedBy,l.runId,l.ts].map(esc).join(",")).join("\n");
     download("singthatsong-log.csv", head+body, "text/csv");
   }
 

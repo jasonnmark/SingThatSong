@@ -70,6 +70,7 @@ ago amen anthem encore serenade vinyl lullaby
 bayou bend bare arrive boo border buddy confess crew dusk engine fling fog fox
 gloves gypsy harlem memphis nashville backseat scarf pulse restless gas ash
 hype flex squad
+sweetie faithful unfaithful true nobody somebody everybody
 `.trim().split(/\s+/));
 
 // ---------------------------------------------------------------------------
@@ -133,8 +134,8 @@ music: `song music melody beat rhythm sing dance radio record guitar piano drums
 bass stage microphone party club disco groove jam choir band concert show
 vinyl speakers clap whistle hum encore anthem lullaby serenade`,
 
-color: `red blue green yellow black white gold golden silver purple pink
-gray brown scarlet crimson neon`,
+color: `color red blue green yellow black white gold golden silver purple pink
+gray brown scarlet crimson neon orange`,
 
 light: `light dark darkness shadow shine glow sparkle flash spotlight
 moonlight sunlight starlight candle neon glitter shimmer flicker`,
@@ -222,9 +223,16 @@ function lemma(word, bases) {
     if (s.endsWith('i') && has(s.slice(0,-1) + 'y')) return s.slice(0,-1) + 'y';
     if (s.length > 1 && s[s.length-1] === s[s.length-2] && has(s.slice(0,-1))) return s.slice(0,-1);
   }
-  if (word.endsWith('ies') && word.length > 4) { const y = word.slice(0,-3) + 'y'; if (has(y)) return y; }
-  if (word.endsWith('es') && word.length > 3) { const s = word.slice(0,-2); if (has(s)) return s; }
-  if (word.endsWith('s') && !word.endsWith('ss') && word.length > 3) { const s = word.slice(0,-1); if (has(s)) return s; }
+  // Plurals -> singular BASE form, even when the singular isn't separately
+  // seeded (eyes->eye, stars->star, tears->tear, roses->rose, lies->lie).
+  // Guards: skip -ss/-us/-is/-as/-os endings (kiss, jealous, christmas, vegas)
+  // and a small keep-set (jeans has no singular).
+  const KEEP_PLURAL = new Set(['jeans']);
+  if (word.length >= 4 && word.endsWith('s')
+      && !/(ss|us|is|as|os)$/.test(word) && !KEEP_PLURAL.has(word)) {
+    if (word.endsWith('ies') && word.length > 4) return word.slice(0, -3) + 'y'; // babies->baby
+    return word.slice(0, -1);
+  }
   return word;
 }
 
